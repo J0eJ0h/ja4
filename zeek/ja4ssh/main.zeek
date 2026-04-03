@@ -119,7 +119,7 @@ event ConnThreshold::packets_threshold_crossed(c: connection, threshold: count, 
     if (is_orig) {
         ConnThreshold::set_packets_threshold(c,threshold + 1,T);
 
-        if (rp$tcp$dl == 0) {
+        if ((rp$tcp$dl == 0) && (rp$tcp$flags == 0x10)) {
           ++c$fp$ja4ssh$orig_ack;
         } else {
           c$fp$ja4ssh$orig_pack_len += rp$tcp$dl;
@@ -127,7 +127,7 @@ event ConnThreshold::packets_threshold_crossed(c: connection, threshold: count, 
     } else {
         ConnThreshold::set_packets_threshold(c,threshold + 1,F);
 
-        if (rp$tcp$dl == 0) {
+        if ((rp$tcp$dl == 0) && (rp$tcp$flags == 0x10)) {
           ++c$fp$ja4ssh$resp_ack;
         } else {
           c$fp$ja4ssh$resp_pack_len += rp$tcp$dl;
