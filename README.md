@@ -107,7 +107,7 @@ This repo includes JA4+ in
 | [Vectra](https://www.vectra.ai/) | JA4+ |
 | [AWS WAF](https://aws.amazon.com/about-aws/whats-new/2025/03/aws-waf-ja4-fingerprinting-aggregation-ja3-ja4-fingerprints-rate-based-rules/) | JA4 |
 | [Tacticly](https://tactic.ly/) | JA4+ |
-| [Palo Alto Networks](https://www.paloaltonetworks.com/cortex/cortex-xpanse) | JA4+ |
+| [Palo Alto Networks](https://www.paloaltonetworks.com/) | JA4+ |
 | [ngrok](https://ngrok.com/docs/traffic-policy/variables/connection/#conntlsja4_fingerprint) | JA4 |
 | [Vertex Synapse](https://vertex.link/) | JA4 and JA4S |
 | [Google Cloud Armor](https://cloud.google.com/armor/docs/rules-language-reference#allow_or_deny_traffic_based_on_a_known_ja4_fingerprint) | JA4 |
@@ -122,11 +122,12 @@ This repo includes JA4+ in
 | [Google Cloud LBs](https://cloud.google.com/release-notes#July_28_2025) | JA4 |
 | [eSentire](https://www.esentire.com/) | JA4+ |
 | [Microsoft Azure Front Door CDN](https://learn.microsoft.com/en-us/azure/frontdoor/front-door-http-headers-protocol) | JA4 |
-| [Moat](https://github.com/arxignis/moat) by [Arxignis](https://arxignis.com) | JA4+ |
+| [Synapse](https://github.com/gen0sec/synapse) by [Gen0Sec](https://gen0sec.com) | JA4X |
 | [Zscaler](https://www.zscaler.com/blogs/product-insights/zscaler-endpoint-context-endpoint-cloud-visibility-and-enforcement-secops) | JA4 |
 | [ExtraHop](https://www.extrahop.com/) | JA4+ |
 | [Validin](https://www.validin.com/) | JA4+ |
 | [Auth0](https://auth0.com/changelog#40upcFBPuFxKG7nacgSlQc) | JA4 |
+| [Security Onion](https://blog.securityonion.net/2026/03/security-onion-300-now-available-with.html) | JA4+ |
 
 with more to be announced...  
 
