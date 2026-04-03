@@ -99,7 +99,6 @@ keymap = {
         'headers': 'request_line',
         'cookies': 'cookie',
         'lang': 'accept_language',
-        'version': 'request_version',
     },
     'http2': {
         'method': 'headers_method', 
@@ -245,7 +244,7 @@ def to_ja4(x, debug_stream):
         x['sorted_extensions'] = x['sorted_extensions'] + '_' + ','.join(x['signature_algorithms'])
         x['original_extensions'] = x['original_extensions'] + '_' + ','.join(x['signature_algorithms'])
 
-    if x['sorted_extensions']:
+    if x['extensions']:
         sorted_extensions = sha_encode(x['sorted_extensions'])
         original_extensions = sha_encode(x['original_extensions'])
     else:
