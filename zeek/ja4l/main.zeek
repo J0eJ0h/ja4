@@ -187,7 +187,7 @@ event ssl_server_hello(c: connection, version: count, record_version: count, pos
             return;
         }
         c$fp$ja4l$ja4l_s += FINGERPRINT::delimiter;
-        c$fp$ja4l$ja4l_s += cat(double_to_count(dt4));
+        c$fp$ja4l$ja4l_s += cat(double_to_count(ja4l_s_c));
         # get F on next orig packet
         ConnThreshold::set_packets_threshold(c,c$orig$num_pkts + 1,T);
     }
