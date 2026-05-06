@@ -163,6 +163,23 @@ function get_v6_parameter_list(options: DHCP::DHCPv6Options): string {
     return FINGERPRINT::vector_of_count_to_str(options$request_list, "%d", "-");
 }
 
+function extract_mac_from_duid(duid: string): string {
+    # duid is hex string
+    if (|duid| < 8) return "";
+    local duid_type = hexstr_to_count(duid[0:4]);
+    local mac_hex = "";
+    if (duid_type == 1) { # LLT: Type(2), HWType(2), Time(4), LLAddr(Variable)
+        if (|duid| >= 20) mac_hex = duid[|duid|-12:|duid|];
+    }
+    else if (duid_type == 3) { # LL: Type(2), HWType(2), LLAddr(Variable)
+        if (|duid| >= 8) mac_hex = duid[|duid|-12:|duid|];
+    }
+    
+    if (mac_hex == "") return "";
+    
+    return fmt("%s:%s:%s:%s:%s:%s", mac_hex[0:2], mac_hex[2:4], mac_hex[4:6], mac_hex[6:8], mac_hex[8:10], mac_hex[10:12]);
+}
+
 function do_ja4d(c: connection, msg: DHCP::Msg, options: DHCP::Options) {
   local ja4d: FINGERPRINT::JA4D::Info;
   ja4d$ts = c$start_time;
@@ -192,15 +209,22 @@ function do_ja4d(c: connection, msg: DHCP::Msg, options: DHCP::Options) {
   Log::write(FINGERPRINT::JA4D::LOG, ja4d);
 }
 
-function do_ja4d6(c: connection, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Options) {
+function do_ja4d6(c: connection, is_orig: bool, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Options) {
   local ja4d: FINGERPRINT::JA4D::Info;
   ja4d$ts = c$start_time;
   ja4d$uid = c$uid;
   ja4d$id = c$id;
 
-  if (c$orig?$l2_addr) {
-      ja4d$client_mac = c$orig$l2_addr;
+  local c_mac = extract_mac_from_duid(options$client_id);
+  if (c_mac == "") {
+      if (is_orig && c$orig?$l2_addr) {
+          c_mac = c$orig$l2_addr;
+      } else if (!is_orig && c$resp?$l2_addr) {
+          c_mac = c$resp$l2_addr;
+      }
   }
+  ja4d$client_mac = c_mac;
+
   if (options$vendor_class != "") {
       ja4d$vendor_class_id = options$vendor_class;
   }
@@ -228,5 +252,5 @@ event dhcp_message(c: connection, is_orig: bool, msg: DHCP::Msg, options: DHCP::
 }
 
 event DHCP::dhcpv6_message(c: connection, is_orig: bool, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Options) {
-    do_ja4d6(c, msg, options);
+    do_ja4d6(c, is_orig, msg, options);
 }
