@@ -197,14 +197,14 @@ function do_ja4d6(c: connection, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Opti
   ja4d$uid = c$uid;
   ja4d$id = c$id;
 
-  ja4d$ja4d6 += get_dhcpv6_message_type(msg);
-  ja4d$ja4d6 += get_v6_duid_length(options);
-  ja4d$ja4d6 += get_v6_request_ip(options);
-  ja4d$ja4d6 += get_v6_fqdn(options);
-  ja4d$ja4d6 += FINGERPRINT::delimiter;
-  ja4d$ja4d6 += get_v6_option_list(options);
-  ja4d$ja4d6 += FINGERPRINT::delimiter;
-  ja4d$ja4d6 += get_v6_parameter_list(options);
+  ja4d$ja4d += get_dhcpv6_message_type(msg);
+  ja4d$ja4d += get_v6_duid_length(options);
+  ja4d$ja4d += get_v6_request_ip(options);
+  ja4d$ja4d += get_v6_fqdn(options);
+  ja4d$ja4d += FINGERPRINT::delimiter;
+  ja4d$ja4d += get_v6_option_list(options);
+  ja4d$ja4d += FINGERPRINT::delimiter;
+  ja4d$ja4d += get_v6_parameter_list(options);
 
   Log::write(FINGERPRINT::JA4D::LOG, ja4d);
 }
