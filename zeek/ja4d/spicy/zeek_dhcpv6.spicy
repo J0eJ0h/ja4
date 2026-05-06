@@ -91,11 +91,11 @@ public function create_dhcpv6_options(msg: DHCPv6::Message):
         }
         
         if (option?.domain_name) {
-            hostname = cast<string>(option.domain_name);
+            hostname = option.domain_name.decode();
         }
 
         if (option.code == DHCPv6::OptionCode::VENDOR_CLASS && option?.data) {
-            vendor_class = cast<string>(option.data);
+            vendor_class = option.data.decode();
         }
 
         # Check for IA_NA/IA_PD and nested IAADDR/IAPREFIX to determine has_ip
