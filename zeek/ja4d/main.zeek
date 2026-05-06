@@ -65,7 +65,7 @@ event zeek_init() &priority=5 {
   Log::create_stream(FINGERPRINT::JA4D::LOG,
     [$columns=FINGERPRINT::JA4D::Info, $ev=log_fingerprint_ja4d, $path="ja4d", $policy=log_policy]
   );
-  Analyzer::register_for_ports(Analyzer::get_tag("spicy::DHCPv6"), set(546/udp, 547/udp));
+  Analyzer::register_for_ports(Analyzer::get_tag("spicy_DHCPv6"), set(546/udp, 547/udp));
 }
 
 
