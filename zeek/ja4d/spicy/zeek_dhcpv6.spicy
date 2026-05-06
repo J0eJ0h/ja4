@@ -1,0 +1,100 @@
+# Copyright (c) 2021 by the Zeek Project. See LICENSE for details.
+
+module Zeek_DHCPv6;
+
+import DHCPv6;
+import spicy;
+import zeek;
+
+on DHCPv6::Message::%done {
+    zeek::confirm_protocol();
+}
+
+on DHCPv6::Message::%error {
+    zeek::reject_protocol("error while parsing DHCPv6 request");
+}
+
+public function create_dhcpv6_msg(msg: DHCPv6::Message):
+    tuple<
+        msg_type: uint32,
+        transaction_id: string,
+        hop_count: uint32,
+        link_address: addr,
+        peer_address: addr
+    > {
+
+    local msg_type = cast<uint32>(msg.msg_type);
+    local transaction_id: string = "";
+    local hop_count: uint32 = 0;
+    local link_address: addr = [::];
+    local peer_address: addr = [::];
+
+    if ( msg?.standard ) {
+        transaction_id = msg.standard.transaction_id;
+    } else if ( msg?.relay ) {
+        hop_count = cast<uint32>(msg.relay.hop_count);
+        link_address = msg.relay.link_address;
+        peer_address = msg.relay.peer_address;
+    }
+
+    return (msg_type, transaction_id, hop_count, link_address, peer_address);
+}
+
+public function create_dhcpv6_options(msg: DHCPv6::Message):
+    tuple<
+        options: vector<uint32>,
+        client_id: string,
+        server_id: string,
+        request_list: vector<uint32>,
+        has_ip: bool,
+        fqdn_flags: uint32
+    > {
+
+    local options: vector<uint32>;
+    local client_id: string = "";
+    local server_id: string = "";
+    local request_list: vector<uint32>;
+    local has_ip: bool = False;
+    local fqdn_flags: uint32 = 0;
+
+    local dhcp_options: vector<DHCPv6::Option>;
+
+    if ( msg?.standard ) {
+        dhcp_options = msg.standard.options.options;
+    } else if ( msg?.relay ) {
+        dhcp_options = msg.relay.options.options;
+    }
+
+    for (option in dhcp_options) {
+        options.push_back(cast<uint32>(option.code));
+
+        if (option?.client_id) {
+            client_id = option.client_id;
+        }
+
+        if (option?.server_id) {
+            server_id = option.server_id;
+        }
+
+        if (option?.request_codes) {
+            for (code in option.request_codes) {
+                request_list.push_back(cast<uint32>(code));
+            }
+        }
+
+        if (option?.flags) {
+            fqdn_flags = cast<uint32>(option.flags);
+        }
+
+        # Check for IA_NA/IA_PD and nested IAADDR/IAPREFIX to determine has_ip
+        if ((option.code == DHCPv6::OptionCode::IA_NA || option.code == DHCPv6::OptionCode::IA_PD) && option?.options) {
+            for (sub_opt in option.options) {
+                if (sub_opt.code == DHCPv6::OptionCode::IAADDR || sub_opt.code == DHCPv6::OptionCode::IAPREFIX) {
+                    has_ip = True;
+                }
+            }
+        }
+    }
+
+    return (options, client_id, server_id, request_list, has_ip, fqdn_flags);
+}

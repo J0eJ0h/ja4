@@ -5,6 +5,34 @@
 # JA4+ by John Althouse
 # Zeek script by Jo Johnson
 
+module DHCP;
+
+export {
+    type DHCPv6Msg: record {
+        msg_type: count;
+        transaction_id: string;
+        hop_count: count;
+        link_address: addr;
+        peer_address: addr;
+    };
+
+    type DHCPv6Options: record {
+        options: vector of count;
+        client_id: string;
+        server_id: string;
+        request_list: vector of count;
+        has_ip: bool;
+        fqdn_flags: count;
+    };
+
+    global dhcpv6_message: event(
+        c: connection,
+        is_orig: bool,
+        msg: DHCPv6Msg,
+        options: DHCPv6Options
+    );
+}
+
 module FINGERPRINT::JA4D;
 
 export {
@@ -17,6 +45,7 @@ export {
 
     # The ssh fingerprint
     ja4d: string &log &default="";
+    ja4d6: string &log &default="";
     client_mac: string &log &default="";
     requested_ip: addr &log &optional;
     vendor_class_id: string &log &default="";
@@ -36,6 +65,7 @@ event zeek_init() &priority=5 {
   Log::create_stream(FINGERPRINT::JA4D::LOG,
     [$columns=FINGERPRINT::JA4D::Info, $ev=log_fingerprint_ja4d, $path="ja4d", $policy=log_policy]
   );
+  Analyzer::register_for_ports(Analyzer::get_tag("spicy::DHCPv6"), set(546/udp, 547/udp));
 }
 
 
@@ -91,6 +121,47 @@ function get_parameter_list(options: DHCP::Options): string {
   return FINGERPRINT::vector_of_count_to_str(options$param_list, "%d", "-");
 }
 
+function get_dhcpv6_message_type(msg: DHCP::DHCPv6Msg): string {
+    if (msg$msg_type in FINGERPRINT::JA4D::DHCPV6_MESSAGE_MAP) {
+        return FINGERPRINT::JA4D::DHCPV6_MESSAGE_MAP[msg$msg_type];
+    }
+    return fmt("%05d", msg$msg_type);
+}
+
+function get_v6_duid_length(options: DHCP::DHCPv6Options): string {
+    if (options$client_id == "") {
+        return "0000";
+    }
+    # client_id is hex string, so length in bytes is length / 2
+    local len = |options$client_id| / 2;
+    if (len > 9999) {
+        return "9999";
+    }
+    return fmt("%04d", len);
+}
+
+function get_v6_request_ip(options: DHCP::DHCPv6Options): string {
+    return options$has_ip ? "i" : "n";
+}
+
+function get_v6_fqdn(options: DHCP::DHCPv6Options): string {
+    return options$fqdn_flags != 0 ? "d" : "n";
+}
+
+function get_v6_option_list(options: DHCP::DHCPv6Options): string {
+    if (|options$options| == 0) {
+        return "00";
+    }
+    return FINGERPRINT::vector_of_count_to_str(options$options, "%d", "-");
+}
+
+function get_v6_parameter_list(options: DHCP::DHCPv6Options): string {
+    if (|options$request_list| == 0) {
+        return "00";
+    }
+    return FINGERPRINT::vector_of_count_to_str(options$request_list, "%d", "-");
+}
+
 function do_ja4d(c: connection, msg: DHCP::Msg, options: DHCP::Options) {
   local ja4d: FINGERPRINT::JA4D::Info;
   ja4d$ts = c$start_time;
@@ -120,9 +191,31 @@ function do_ja4d(c: connection, msg: DHCP::Msg, options: DHCP::Options) {
   Log::write(FINGERPRINT::JA4D::LOG, ja4d);
 }
 
+function do_ja4d6(c: connection, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Options) {
+  local ja4d: FINGERPRINT::JA4D::Info;
+  ja4d$ts = c$start_time;
+  ja4d$uid = c$uid;
+  ja4d$id = c$id;
+
+  ja4d$ja4d6 += get_dhcpv6_message_type(msg);
+  ja4d$ja4d6 += get_v6_duid_length(options);
+  ja4d$ja4d6 += get_v6_request_ip(options);
+  ja4d$ja4d6 += get_v6_fqdn(options);
+  ja4d$ja4d6 += FINGERPRINT::delimiter;
+  ja4d$ja4d6 += get_v6_option_list(options);
+  ja4d$ja4d6 += FINGERPRINT::delimiter;
+  ja4d$ja4d6 += get_v6_parameter_list(options);
+
+  Log::write(FINGERPRINT::JA4D::LOG, ja4d);
+}
+
 # We log per DHCP message for this fingerprint instead of aggregating across a 
 # DHCP conversation
 event dhcp_message(c: connection, is_orig: bool, msg: DHCP::Msg, options: DHCP::Options) {
     # This is where we can add throttling or message type filtering
     do_ja4d(c, msg, options);
+}
+
+event DHCP::dhcpv6_message(c: connection, is_orig: bool, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Options) {
+    do_ja4d6(c, msg, options);
 }

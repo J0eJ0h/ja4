@@ -1,0 +1,8 @@
+# Copyright (c) 2021 by the Zeek Project. See LICENSE for details.
+
+protocol analyzer spicy::DHCPv6 over UDP:
+    parse with DHCPv6::Message;
+
+import Zeek_DHCPv6;
+
+on DHCPv6::Message -> event DHCP::dhcpv6_message($conn, $is_orig, Zeek_DHCPv6::create_dhcpv6_msg(self), Zeek_DHCPv6::create_dhcpv6_options(self));

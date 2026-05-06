@@ -1,0 +1,241 @@
+# Copyright (c) 2021 by the Zeek Project. See LICENSE for details.
+
+module DHCPv6;
+
+import spicy;
+
+# ---------------------------------------------------------------------------
+# DHCPv6 (RFC 8415)
+# ---------------------------------------------------------------------------
+
+type MessageType = enum {
+    SOLICIT = 1,
+    ADVERTISE = 2,
+    REQUEST = 3,
+    CONFIRM = 4,
+    RENEW = 5,
+    REBIND = 6,
+    REPLY = 7,
+    RELEASE = 8,
+    DECLINE = 9,
+    RECONFIGURE = 10,
+    INFORMATION_REQUEST = 11,
+    RELAY_FORW = 12,
+    RELAY_REPL = 13,
+    LEASEQUERY = 14,
+    LEASEQUERY_REPLY = 15,
+    LEASEQUERY_DONE = 16,
+    LEASEQUERY_DATA = 17,
+    RECONFIGURE_REQUEST = 18,
+    RECONFIGURE_REPLY = 19,
+    DHCPV4_QUERY = 20,
+    DHCPV4_RESPONSE = 21,
+    ACTIVELEASEQUERY = 22,
+    STARTTLS = 23,
+    BNDUPD = 24,
+    BNDREPLY = 25,
+    POOLREQ = 26,
+    POOLRESP = 27,
+    UPDREQ = 28,
+    UPDREQALL = 29,
+    UPDDONE = 30,
+    CONNECT = 31,
+    CONNECTREPLY = 32,
+    DISCONNECT = 33,
+    STATE = 34,
+    CONTACT = 35,
+    ADDR_REG_INFORM = 36,
+    ADDR_REG_REPLY = 37,
+};
+
+type OptionCode = enum {
+    CLIENTID = 1,
+    SERVERID = 2,
+    IA_NA = 3,
+    IA_TA = 4,
+    IAADDR = 5,
+    ORO = 6,
+    PREFERENCE = 7,
+    ELAPSED_TIME = 8,
+    RELAY_MSG = 9,
+    AUTH = 11,
+    UNICAST = 12,
+    STATUS_CODE = 13,
+    RAPID_COMMIT = 14,
+    USER_CLASS = 15,
+    VENDOR_CLASS = 16,
+    VENDOR_OPTS = 17,
+    INTERFACE_ID = 18,
+    RECONF_MSG = 19,
+    RECONF_ACCEPT = 20,
+    SIP_SERVERS_DOMAIN_LIST = 21,
+    SIP_SERVERS_IPV6_ADDRESS_LIST = 22,
+    DNS_RECURSIVE_NAME_SERVER = 23,
+    DOMAIN_SEARCH_LIST = 24,
+    IA_PD = 25,
+    IAPREFIX = 26,
+    NIS_SERVERS = 27,
+    NISP_SERVERS = 28,
+    NIS_DOMAIN_NAME = 29,
+    NISP_DOMAIN_NAME = 30,
+    SNTP_SERVERS = 31,
+    INFORMATION_REFRESH_TIME = 32,
+    BCMCS_SERVER_D = 33,
+    BCMCS_SERVER_A = 34,
+    GEOCONF_CIVIC = 36,
+    REMOTE_ID = 37,
+    SUBSCRIBER_ID = 38,
+    CLIENT_FQDN = 39,
+    PANA_AGENT = 40,
+    NEW_POSIX_TIMEZONE = 41,
+    NEW_TZDB_TIMEZONE = 42,
+    ECHO_REQUEST = 43,
+    LQ_QUERY = 44,
+    CLIENT_DATA = 45,
+    CLT_TIME = 46,
+    LQ_RELAY_DATA = 47,
+    LQ_CLIENT_LINK = 48,
+    MIP6_HNIDF = 49,
+    MIP6_VDINF = 50,
+    V6_LOST = 51,
+    CAPWAP_AC_V6 = 52,
+    RELAY_ID = 53,
+    IPV6_ADDRESS_MOS = 54,
+    IPV6_FQDN_MOS = 55,
+    NTP_SERVER = 56,
+    V6_ACCESS_DOMAIN = 57,
+    SIP_UA_CS_LIST = 58,
+    BOOTFILE_URL = 59,
+    BOOTFILE_PARAM = 60,
+    CLIENT_ARCH_TYPE = 61,
+    NII = 62,
+    GEOLOCATION = 63,
+    AFTR_NAME = 64,
+    ERP_LOCAL_DOMAIN_NAME = 65,
+    RSOO = 66,
+    PD_EXCLUDE = 67,
+    VSS = 68,
+    MIP6_IDINF = 69,
+    MIP6_UDINF = 70,
+    MIP6_HNP = 71,
+    MIP6_HAA = 72,
+    MIP6_HAF = 73,
+    RDNSS_SELECTION = 74,
+    KRB_PRINCIPAL_NAME = 75,
+    KRB_REALM_NAME = 76,
+    KRB_DEFAULT_REALM_NAME = 77,
+    KRB_KDC = 78,
+    CLIENT_LINKLAYER_ADDR = 79,
+    LINK_ADDRESS = 80,
+    RADIUS = 81,
+    SOL_MAX_RT = 82,
+    INF_MAX_RT = 83,
+    ADDR_SELECTION = 84,
+    PCP_SERVER = 85,
+    PORTPARAMS = 86,
+    DHCPV4_MSG = 87,
+    DHCP4_O_DHCP6_SERVER = 88,
+    S46_RULE = 89,
+    S46_BR = 90,
+    S46_DMR = 91,
+    S46_V4V6BIND = 92,
+    S46_PORTPARAMS = 93,
+    S46_CONT_MAPE = 94,
+    S46_CONT_MAPT = 95,
+    S46_CONT_LW = 96,
+    IPv6_Address_AND_SFQDN = 97,
+    IPv4_Address_AND_SFQDN = 98,
+    IPv6_Address_AND_IPv4_Address = 99,
+    F_BINDING_STATUS = 100,
+    F_BINDING_REPLY = 101,
+    F_BINDING_ACK = 102,
+    F_BINDING_UPD = 103,
+    F_BINDING_DEL = 104,
+    F_BINDING_REV = 105,
+    F_BINDING_REQ = 106,
+    ADN_BROKER_LIST = 107,
+    CAPTIVE_PORTAL = 114,
+};
+
+public type Message = unit {
+    msg_type: uint8;
+
+    switch(self.msg_type) {
+        12, 13 -> relay: RelayMessage;
+        *      -> standard: StandardMessage;
+    };
+};
+
+# Stringify arbitrary bytes using built-in.
+function bytes_to_hex_string(data: bytes): string {
+    local hex_str = "";
+    for ( i in data ) {
+        hex_str += ("%02x" % cast<uint32>(i));
+    }
+    return hex_str;
+}
+
+type StandardMessage = unit {
+    transaction_id: bytes &size=3 &convert=bytes_to_hex_string($$);
+    options: Options;
+};
+
+type RelayMessage = unit {
+    hop_count: uint8;
+    link_address: addr &ipv6;
+    peer_address: addr &ipv6;
+    options: Options;
+};
+
+type Options = unit {
+    options: Option[] &eod;
+};
+
+type Option = unit {
+    code: uint16 &convert=OptionCode($$);
+    len: uint16;
+
+    switch (self.code) {
+        OptionCode::CLIENTID -> {
+            client_id: bytes &size=self.len &convert=bytes_to_hex_string($$);
+        }
+        OptionCode::SERVERID -> {
+            server_id: bytes &size=self.len &convert=bytes_to_hex_string($$);
+        }
+        OptionCode::IA_NA -> {
+            iaid: uint32;
+            t1: uint32;
+            t2: uint32;
+            options: Option[] &size=(self.len > 12 ? self.len - 12 : 0);
+        }
+        OptionCode::IAADDR -> {
+            ipv6_addr: addr &ipv6;
+            preferred_lifetime: uint32;
+            valid_lifetime: uint32;
+            options: Option[] &size=(self.len > 24 ? self.len - 24 : 0);
+        }
+        OptionCode::IA_PD -> {
+            iaid: uint32;
+            t1: uint32;
+            t2: uint32;
+            options: Option[] &size=(self.len > 12 ? self.len - 12 : 0);
+        }
+        OptionCode::IAPREFIX -> {
+            preferred_lifetime: uint32;
+            valid_lifetime: uint32;
+            prefix_len: uint8;
+            ipv6_prefix: addr &ipv6;
+            options: Option[] &size=(self.len > 25 ? self.len - 25 : 0);
+        }
+        OptionCode::ORO -> {
+            request_codes: uint16[self.len / 2];
+        }
+        OptionCode::CLIENT_FQDN -> {
+            flags: uint8;
+            domain_name: bytes &size=(self.len - 1);
+        }
+        * -> {
+            data: bytes &size=self.len;
+        }
+    };
+};
