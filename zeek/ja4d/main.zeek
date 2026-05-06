@@ -166,7 +166,7 @@ function get_v6_parameter_list(options: DHCP::DHCPv6Options): string {
 function extract_mac_from_duid(duid: string): string {
     # duid is hex string
     if (|duid| < 8) return "";
-    local duid_type = hexstr_to_count(duid[0:4]);
+    local duid_type = bytestring_to_count(hexstr_to_bytestring(duid[0:4]));
     local mac_hex = "";
     if (duid_type == 1) { # LLT: Type(2), HWType(2), Time(4), LLAddr(Variable)
         if (|duid| >= 20) mac_hex = duid[|duid|-12:|duid|];
