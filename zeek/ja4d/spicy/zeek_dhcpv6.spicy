@@ -47,7 +47,9 @@ public function create_dhcpv6_options(msg: DHCPv6::Message):
         server_id: string,
         request_list: vector<uint32>,
         has_ip: bool,
-        fqdn_flags: uint32
+        fqdn_flags: uint32,
+        vendor_class: string,
+        hostname: string
     > {
 
     local options: vector<uint32>;
@@ -56,6 +58,8 @@ public function create_dhcpv6_options(msg: DHCPv6::Message):
     local request_list: vector<uint32>;
     local has_ip: bool = False;
     local fqdn_flags: uint32 = 0;
+    local vendor_class: string = "";
+    local hostname: string = "";
 
     local dhcp_options: vector<DHCPv6::Option>;
 
@@ -85,6 +89,14 @@ public function create_dhcpv6_options(msg: DHCPv6::Message):
         if (option?.flags) {
             fqdn_flags = cast<uint32>(option.flags);
         }
+        
+        if (option?.domain_name) {
+            hostname = cast<string>(option.domain_name);
+        }
+
+        if (option.code == DHCPv6::OptionCode::VENDOR_CLASS && option?.data) {
+            vendor_class = cast<string>(option.data);
+        }
 
         # Check for IA_NA/IA_PD and nested IAADDR/IAPREFIX to determine has_ip
         if ((option.code == DHCPv6::OptionCode::IA_NA || option.code == DHCPv6::OptionCode::IA_PD) && option?.options) {
@@ -96,5 +108,5 @@ public function create_dhcpv6_options(msg: DHCPv6::Message):
         }
     }
 
-    return (options, client_id, server_id, request_list, has_ip, fqdn_flags);
+    return (options, client_id, server_id, request_list, has_ip, fqdn_flags, vendor_class, hostname);
 }

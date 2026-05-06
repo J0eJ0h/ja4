@@ -23,6 +23,8 @@ export {
         request_list: vector of count;
         has_ip: bool;
         fqdn_flags: count;
+        vendor_class: string;
+        hostname: string;
     };
 
     global dhcpv6_message: event(
@@ -45,7 +47,6 @@ export {
 
     # The ssh fingerprint
     ja4d: string &log &default="";
-    ja4d6: string &log &default="";
     client_mac: string &log &default="";
     requested_ip: addr &log &optional;
     vendor_class_id: string &log &default="";
@@ -196,6 +197,16 @@ function do_ja4d6(c: connection, msg: DHCP::DHCPv6Msg, options: DHCP::DHCPv6Opti
   ja4d$ts = c$start_time;
   ja4d$uid = c$uid;
   ja4d$id = c$id;
+
+  if (c$orig?$l2_addr) {
+      ja4d$client_mac = c$orig$l2_addr;
+  }
+  if (options$vendor_class != "") {
+      ja4d$vendor_class_id = options$vendor_class;
+  }
+  if (options$hostname != "") {
+      ja4d$hostname = options$hostname;
+  }
 
   ja4d$ja4d += get_dhcpv6_message_type(msg);
   ja4d$ja4d += get_v6_duid_length(options);
